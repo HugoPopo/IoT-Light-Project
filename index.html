@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Light Manager</title>
+</head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+
+var user;
+
+//toggle the light
+function toggle(topic, client){
+    console.log("toggle: "+topic);
+    console.log("client: "+client.options.host);
+    console.log("user: "+getUser().options.host);
+    newTopic = topic.slice(0,-6)+"/actuate";
+    result = getUser().publish(newTopic, "toggle");
+    console.log("toggle: "+ newTopic);
+    console.log(result);
+}
+function getUser(){
+    return user;
+}
+
+//array containg the different lights
+lights = []
+
+// the function passed as parameter will be called when the DOM is ready
+$(function(){
+    
+  console.log("start");
+
+		  // create a client that publishes a message from HTML events
+		  // this will be called when the "Publish" button is pressed 
+          
+		  user = mqtt.connect("wss://web_user:usr147963&@m23.cloudmqtt.com:35447");
+          
+          user.subscribe("room/+/light/+/state");
+		  user.on("message", function (topic, mqtt_payload) {
+            payload = new TextDecoder("utf-8").decode(mqtt_payload);
+			console.log("message received by root: " , topic , new TextDecoder("utf-8").decode(mqtt_payload));
+			// update the content of the #root element using jquery
+            
+            if($.inArray( topic, lights)== -1)
+            {
+                lights.push(topic);
+                //alert(getUser().options.host);
+                $("#root").append("<div class='light' id='"+topic+"'>Light: "+topic+"<br>state:"+payload+
+                                    "<br><button onClick='toggle(\""+topic+"\",getUser());'>Toggle</button></div><br>");
+                                    //"<br><button onClick='alert(getUser());'>Toggle</button></div>");
+            } else {
+                //alert(getUser().options.host);
+                $("#"+topic.toString()).html("Light: "+topic+"<br>state:"+payload+
+                                    "<br><button onClick='toggle(\""+topic+"\",getUser());'>Toggle</button></div><br>");
+            }
+                                    
+		  });
+          
+          user.publish("room/all/discover","");
+
+} );
+
+</script>
+
+<h1>Light Manager</h1>
+
+<p>Lights of the system<p>
+<br>
+<div id="root"></div>
+
+
+</body>
+</html>
